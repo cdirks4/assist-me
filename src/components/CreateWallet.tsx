@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { agentKit } from "@/services/agentkit";
+import { useAgentWallet } from "@/context/AgentWalletContext";
 
 interface CreateWalletProps {
   userId: string;
@@ -11,20 +11,16 @@ interface CreateWalletProps {
 export default function CreateWallet({ userId, onWalletCreated }: CreateWalletProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { connect, address } = useAgentWallet();
 
   const handleCreateWallet = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const connected = await agentKit.connectWallet(userId, true);
-      if (connected) {
-        const address = agentKit.getWalletAddress();
-        if (address) {
-          onWalletCreated?.(address);
-        }
-      } else {
-        setError("Failed to create wallet. Please try again.");
+      await connect(userId);
+      if (address) {
+        onWalletCreated?.(address);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create wallet");

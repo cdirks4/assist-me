@@ -9,6 +9,7 @@ class ProviderService {
       this.provider = new ethers.JsonRpcProvider(MANTLE_SEPOLIA.rpcUrl, {
         name: MANTLE_SEPOLIA.name,
         chainId: MANTLE_SEPOLIA.id,
+        ensAddress: null, // Explicitly disable ENS resolution
       });
     }
     return this.provider;

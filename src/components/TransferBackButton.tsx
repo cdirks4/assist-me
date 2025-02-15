@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { agentKit } from "@/services/agentkit";
 import { ethers } from "ethers";
+import { useAgentWallet } from "@/context/AgentWalletContext";
 
 export function TransferBackButton() {
   const { login, authenticated } = usePrivy();
   const { wallets } = useWallets();
+  const { signer: agentWallet, isConnected } = useAgentWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,13 +18,17 @@ export function TransferBackButton() {
       return;
     }
 
+    if (!isConnected || !agentWallet) {
+      setError("Agent wallet not connected");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
       const userWallet = wallets[0];
-      const provider = await agentKit.provider;
-      const agentWallet = agentKit.getSigner();
+      const provider = agentWallet.provider;
 
       // Fixed amount to send
       const amountToSend = ethers.parseEther("1");
@@ -60,6 +65,10 @@ export function TransferBackButton() {
       setIsLoading(false);
     }
   };
+
+  if (!isConnected) {
+    return null;
+  }
 
   return (
     <div className="mt-8 text-center">

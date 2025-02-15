@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { uniswapService } from "@/services/uniswap";
 import { ethers } from "ethers";
-import { agentKit } from "@/services/agentkit";
+import { useAgentWallet } from "@/context/AgentWalletContext";
 
 interface TokenBalance {
   symbol: string;
@@ -16,6 +16,9 @@ export function WalletBalance({ address }: { address: string }) {
   const [userBalances, setUserBalances] = useState<TokenBalance[]>([]);
   const [agentBalances, setAgentBalances] = useState<TokenBalance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { address: agentAddress, isConnected } = useAgentWallet();
 
   const fetchWalletBalances = async (walletAddress: string) => {
     const provider = new ethers.JsonRpcProvider(
@@ -92,35 +95,46 @@ export function WalletBalance({ address }: { address: string }) {
     ];
   };
 
-  useEffect(() => {
-    const fetchAllBalances = async () => {
-      try {
-        const agentAddress = agentKit.getWalletAddress();
-        if (!agentAddress) {
-          throw new Error("Agent wallet not connected");
-        }
-
-        const [userWallet, agentWallet] = await Promise.all([
-          fetchWalletBalances(address),
-          fetchWalletBalances(agentAddress),
-        ]);
-
-        setUserBalances(userWallet);
-        setAgentBalances(agentWallet);
-      } catch (error) {
-        console.error("Failed to fetch balances:", error);
-      } finally {
-        setLoading(false);
+  const fetchAllBalances = async () => {
+    try {
+      if (!isConnected || !agentAddress) {
+        throw new Error("Agent wallet not connected");
       }
-    };
 
+      const [userWallet, agentWallet] = await Promise.all([
+        fetchWalletBalances(address),
+        fetchWalletBalances(agentAddress),
+      ]);
+
+      setUserBalances(userWallet);
+      setAgentBalances(agentWallet);
+      setError(null);
+    } catch (error) {
+      console.error("Failed to fetch balances:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch balances");
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchAllBalances();
+  };
+
+  useEffect(() => {
     if (address) {
       fetchAllBalances();
     }
-  }, [address]);
+  }, [address, agentAddress, isConnected]);
 
   if (loading) {
     return <div className="text-gray-400">Loading balances...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
   }
 
   const WalletSection = ({
@@ -156,7 +170,31 @@ export function WalletBalance({ address }: { address: string }) {
 
   return (
     <div className="bg-white/5 rounded-xl border border-white/10 p-4 mb-6">
-      <h2 className="text-lg font-semibold mb-4">Wallet Balances</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Wallet Balances</h2>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg text-white text-sm flex items-center gap-2"
+        >
+          {isRefreshing ? (
+            <>
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Refreshing...</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </>
+          )}
+        </button>
+      </div>
       <div className="flex flex-col md:flex-row gap-6">
         <WalletSection title="Your Wallet" balances={userBalances} />
         <div className="border-t md:border-l border-white/10" />

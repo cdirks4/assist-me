@@ -4,7 +4,7 @@ import Groq from "groq-sdk";
 import { uniswapService } from "@/services/uniswap";
 
 interface TradeIntent {
-  type: "buy" | "sell" | "none";
+  type: "buy" | "sell" | "wrap" | "none";
   tokenIn?: string;
   tokenOut?: string;
   amount?: string;
@@ -114,6 +114,7 @@ async function parseTradeIntent(
       content: `Extract trade intent from this message. Return JSON only in this format:
       For buy: {"type":"buy","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"100"}
       For sell: {"type":"sell","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"100"}
+      For wrap: {"type":"wrap","amount":"100"}
       For no trade: {"type":"none"}`,
     },
     {

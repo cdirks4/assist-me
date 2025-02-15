@@ -159,15 +159,51 @@ export class AgentKitService {
 
       console.log(`Attempting to swap ${amount} ${tokenIn} for ${tokenOut}`);
       
-      const result = await swapService.executeSwap({
+      // Add more detailed logging before the swap
+      console.log("Swap parameters:", {
         tokenIn,
         tokenOut,
         amount,
         recipient: address,
-        slippageTolerance
+        slippageTolerance,
+        walletAddress: this.wallet.address,
+        chainId: (await this.wallet.provider.getNetwork()).chainId
       });
 
-      return result;
+      try {
+        const result = await swapService.executeSwap({
+          tokenIn,
+          tokenOut,
+          amount,
+          recipient: address,
+          slippageTolerance
+        });
+
+        console.log("Swap completed successfully:", result);
+        return result;
+      } catch (swapError: any) {
+        // Enhanced error handling with specific error types
+        if (swapError.message?.includes("missing revert data")) {
+          console.error("Gas estimation failed, but transaction might still succeed with manual gas limit");
+          throw new Error("Swap failed during gas estimation. Please try again with manual gas settings.");
+        }
+        
+        if (swapError.code === "CALL_EXCEPTION") {
+          console.error("Transaction reverted by the network:", swapError);
+          throw new Error("Swap failed: Transaction was reverted by the network. Please check token allowances and balances.");
+        }
+
+        // Log detailed error information for debugging
+        console.error("Swap failed with error:", {
+          message: swapError.message,
+          code: swapError.code,
+          data: swapError.data,
+          stack: swapError.stack,
+          transaction: swapError.transaction
+        });
+
+        throw swapError;
+      }
     } catch (error) {
       console.error("Failed to execute swap:", error);
       throw error;

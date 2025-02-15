@@ -1,31 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import CreateWallet from "@/components/CreateWallet";
 import { WalletFunding } from "@/components/WalletFunding";
 import { TransferBackButton } from "@/components/TransferBackButton";
-import { agentKit } from "@/services/agentkit";
 import { TradingChat } from "@/components/TradingChat";
+import { Trading } from "@/components/Trading";
+import { SimpleSwapButton } from "@/components/SimpleSwapButton";
+import { useAgentWallet } from "@/context/AgentWalletContext";
 
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [agentAddress, setAgentAddress] = useState<string | null>(null);
+  const { address: agentAddress } = useAgentWallet();
   const userId = "test-user";
-
-  useEffect(() => {
-    const initAgent = async () => {
-      try {
-        // Connect agent wallet
-        await agentKit.connectWallet(userId);
-        const address = agentKit.getWalletAddress();
-        setAgentAddress(address);
-      } catch (error) {
-        console.error("Failed to initialize agent wallet:", error);
-      }
-    };
-
-    initAgent();
-  }, [userId]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -40,17 +27,17 @@ export default function Home() {
           </p>
         </div>
 
-        <TradingChat />
-
+        {/* <Trading /> */}
         {agentAddress ? (
-          <WalletFunding recipientAddress={agentAddress} />
+          <WalletFunding />
         ) : (
           <div className="text-center text-gray-400">
             Loading agent wallet...
           </div>
         )}
-
+        {/* <SimpleSwapButton /> */}
         <TransferBackButton />
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Left Column - Wallet Creation */}

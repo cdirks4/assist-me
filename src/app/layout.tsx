@@ -4,6 +4,7 @@ import "./globals.css";
 import { PrivyProviderWrapper } from "@/providers/PrivyProvider";
 import SubgraphProvider from "@/providers/SubgraphProvider";
 import { NavBar } from "@/components/NavBar";
+import { AgentWalletProvider } from "@/context/AgentWalletContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -21,9 +22,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <PrivyProviderWrapper>
           <SubgraphProvider>
-            <NavBar />
-
-            {children}
+            <AgentWalletProvider>
+              <NavBar />
+              {children}
+            </AgentWalletProvider>
           </SubgraphProvider>
         </PrivyProviderWrapper>
       </body>

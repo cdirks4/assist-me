@@ -1,26 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { WalletService } from "@/services/wallet";
 import { ethers } from "ethers";
-import { agentKit } from "@/services/agentkit";
+import { useAgentWallet } from "@/context/AgentWalletContext";
 
 export function WalletFunding() {
   const { login, authenticated } = usePrivy();
   const { wallets } = useWallets();
+  const { address: agentAddress } = useAgentWallet();
   const [amount, setAmount] = useState("0.01");
   const [status, setStatus] = useState<"idle" | "funding" | "funded" | "error">("idle");
   const [txHash, setTxHash] = useState<string>("");
-  const [agentAddress, setAgentAddress] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
-
-  useEffect(() => {
-    const address = agentKit.getWalletAddress();
-    if (address) {
-      setAgentAddress(address);
-    }
-  }, []);
 
   const handleFunding = async () => {
     if (!authenticated || !wallets?.[0]) {

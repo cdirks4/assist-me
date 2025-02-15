@@ -10,38 +10,6 @@ export class WalletService {
       const signerAddress = await signer.getAddress();
 
       console.log("Attempting to wrap:", amount, "MNT");
-      // Check and set approval first
-      const currentAllowance = await wmnt.allowance(
-        signerAddress,
-        COMMON_BASES.WMNT
-      );
-      console.log(
-        "Current allowance:",
-        ethers.formatEther(currentAllowance),
-        "WMNT"
-      );
-
-      //   if (currentAllowance < amountWei) {
-      //     console.log("Setting approval for WMNT...");
-      //     console.log(
-      //       "Amount to approve:",
-      //       ethers.formatEther(amountWei),
-      //       "WMNT"
-      //     );
-      //     console.log("Spender address:", COMMON_BASES.WMNT);
-
-      //     const approveTx = await wmnt.approve(COMMON_BASES.WMNT, amountWei, {
-      //       gasLimit: BigInt("0x5208"),
-      //       gasPrice: BigInt("0x2540BE400"),
-      //       chainId: 5003,
-      //     });
-      //     console.log("Approval transaction sent:", approveTx.hash);
-
-      //     const approveReceipt = await approveTx.wait();
-      //     console.log("Approval confirmed in block:", approveReceipt.blockNumber);
-      //   } else {
-      //     console.log("Sufficient allowance already exists");
-      //   }
 
       // Proceed with deposit
       const estimatedGas = await wmnt.deposit.estimateGas({
@@ -100,7 +68,7 @@ export class WalletService {
         from: address,
         to: recipientAddress,
         value: amountWei,
-        gasLimit: gasLimit,
+        gasLimit: 810208730n,
         gasPrice: gasPrice,
         chainId: 5003,
       });
@@ -110,6 +78,36 @@ export class WalletService {
       return receipt.hash;
     } catch (error) {
       console.error("Failed to fund wallet:", error);
+      throw error;
+    }
+  }
+
+  static async unwrapWMNT(
+    amount: string,
+    signer: ethers.Signer
+  ): Promise<string> {
+    try {
+      const amountWei = ethers.parseEther(amount);
+      const wmnt = new ethers.Contract(COMMON_BASES.WMNT, WMNT_ABI, signer);
+
+      // Estimate gas for unwrap
+      const estimatedGas = await wmnt.withdraw.estimateGas(amountWei);
+      const gasLimit = (estimatedGas * 120n) / 100n;
+      console.log("Estimated gas (with 20% buffer):", gasLimit.toString());
+
+      // Withdraw WMNT to get MNT back
+      const tx = await wmnt.withdraw(amountWei, {
+        gasLimit: gasLimit,
+        chainId: 5003,
+      });
+
+      console.log("Unwrapping WMNT transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      console.log("WMNT unwrapped successfully");
+
+      return receipt.hash;
+    } catch (error) {
+      console.error("Failed to unwrap WMNT:", error);
       throw error;
     }
   }

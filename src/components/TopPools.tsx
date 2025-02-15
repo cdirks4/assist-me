@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { uniswapService } from "@/services/uniswap";
 import { Tooltip } from "./Tooltip";
+import { SwapPoolButton } from "./SwapPoolButton";
 
 export function TopPools() {
   const [pools, setPools] = useState<any[]>([]);
@@ -16,22 +17,31 @@ export function TopPools() {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {pools.map((pool) => (
-        <Tooltip key={pool.id} text={pool.id}>
-          <div className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors cursor-help">
-            <h3 className="text-lg font-bold mb-2">
-              {pool.token0.symbol}/{pool.token1.symbol}
-            </h3>
-            <p className="text-sm text-gray-400">
-              Fee: {(Number(pool.feeTier) / 10000).toFixed(2)}%
-            </p>
-            <p className="text-sm text-gray-400">
-              TVL: ${Number(pool.totalValueLockedUSD).toLocaleString()}
-            </p>
+    <div className="mb-8">
+      <h2 className="text-xl font-semibold mb-4">Top Liquidity Pools</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {pools.map((pool) => (
+          <div
+            key={pool.id}
+            className="p-4 bg-white/5 rounded-lg border border-white/10"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">
+                {pool.token0.symbol}/{pool.token1.symbol}
+              </span>
+              <span className="text-sm text-gray-400">
+                TVL: ${Number(pool.totalValueLockedUSD).toLocaleString()}
+              </span>
+            </div>
+            <SwapPoolButton
+              token0Address={pool.token0.id}
+              token1Address={pool.token1.id}
+              token0Symbol={pool.token0.symbol}
+              token1Symbol={pool.token1.symbol}
+            />
           </div>
-        </Tooltip>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

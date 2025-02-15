@@ -8,5 +8,6 @@ export const MANTLE_SEPOLIA = {
     symbol: 'MNT',
     decimals: 18
   },
-  blockExplorer: 'https://sepolia.mantlescan.xyz'
-};
+  blockExplorer: 'https://sepolia.mantlescan.xyz',
+  ensAddress: null // Explicitly disable ENS resolution
+} as const;
