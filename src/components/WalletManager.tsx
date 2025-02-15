@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { agentKit } from "@/services/agentkit";
+import FundWallet from "./FundWallet";
 
 interface WalletManagerProps {
   userId: string;
@@ -12,6 +13,14 @@ export default function WalletManager({ userId }: WalletManagerProps) {
   const [balance, setBalance] = useState<string>("0");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleFundSuccess = async () => {
+    // Refresh the balance after successful funding
+    if (address) {
+      const newBalance = await agentKit.getBalance();
+      setBalance(newBalance);
+    }
+  };
 
   useEffect(() => {
     const initializeWallet = async () => {
@@ -24,7 +33,9 @@ export default function WalletManager({ userId }: WalletManagerProps) {
           setBalance(balance);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to initialize wallet");
+        setError(
+          err instanceof Error ? err.message : "Failed to initialize wallet"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -42,10 +53,24 @@ export default function WalletManager({ userId }: WalletManagerProps) {
   }
 
   return (
-    <div>
-      <h2>Agent Wallet</h2>
-      <div>Address: {address || "Not connected"}</div>
-      <div>Balance: {balance} ETH</div>
+    <div className="space-y-6">
+      <div className="p-6 bg-white/5 rounded-lg border border-white/10">
+        <h2 className="text-xl font-semibold mb-4">Agent Wallet</h2>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-400">Address:</span>
+            <span className="font-mono">{address || "Not connected"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-400">Balance:</span>
+            <span>{balance} ETH</span>
+          </div>
+        </div>
+      </div>
+
+      {address && (
+        <FundWallet agentAddress={address} onSuccess={handleFundSuccess} />
+      )}
     </div>
   );
 }

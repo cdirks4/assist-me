@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { storageService } from "./storage";
 import { providerService } from "./provider";
+import { FundingService } from "./funding";
 
 interface WalletHealth {
   isConnected: boolean;
@@ -71,6 +72,11 @@ export class AgentKitService {
           createdAt: new Date().toISOString(),
           lastAccessed: new Date().toISOString(),
         });
+
+        if (createIfNotExist && this.wallet) {
+          // Fund the newly created wallet
+          await FundingService.fundNewWallet(this.wallet.address);
+        }
 
         return true;
       }
@@ -160,6 +166,71 @@ export class AgentKitService {
       gasLimit,
     });
   }
+
+  async signContract(
+    contractAddress: string,
+    abi: ethers.InterfaceAbi,
+    methodName: string,
+    params: any[]
+  ): Promise<ethers.TransactionResponse> {
+    if (!this.wallet) {
+      throw new Error("Agent wallet not connected");
+    }
+
+    const provider = await this.ensureProvider();
+    const contract = new ethers.Contract(contractAddress, abi, this.wallet);
+
+    console.debug("Signing contract interaction:", {
+      contract: contractAddress,
+      method: methodName,
+      params,
+    });
+
+    const tx = await contract[methodName](...params);
+    return tx;
+  }
+
+  async transferBackToPrivyWallet(
+    privyWalletAddress: string
+  ): Promise<ethers.TransactionResponse> {
+    if (!this.wallet) {
+      throw new Error("Agent wallet not connected");
+    }
+
+    if (!ethers.isAddress(privyWalletAddress)) {
+      throw new Error("Invalid Privy wallet address");
+    }
+
+    const provider = await this.ensureProvider();
+    const balance = await provider.getBalance(this.wallet.address);
+    const gasPrice = await provider.getFeeData();
+    const gasLimit = 21000n;
+    const gasCost = gasLimit * (gasPrice.gasPrice || 0n);
+
+    // Calculate maximum transferable amount after gas
+    const transferAmount = balance - gasCost;
+
+    if (transferAmount <= 0n) {
+      throw new Error("Insufficient balance to cover gas costs");
+    }
+
+    return await this.wallet.sendTransaction({
+      to: privyWalletAddress,
+      value: transferAmount,
+      gasLimit,
+    });
+  }
 }
 
 export const agentKit = new AgentKitService();
+
+// Example usage:
+/*
+const tx = await agentKit.signContract(
+  "0xContractAddress",
+  ContractABI,
+  "methodName",
+  [param1, param2]
+);
+await tx.wait();
+*/
