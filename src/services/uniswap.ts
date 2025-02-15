@@ -11,6 +11,7 @@ import {
   SwapsResponse,
 } from "@/types/uniswap";
 import { inMemoryCache } from "@/lib/inMemoryCache";
+const WMNT_ADDRESS = "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8"; // Wrapped MNT on Mantle
 
 class UniswapService {
   private client;
@@ -29,43 +30,75 @@ class UniswapService {
   }
 
   async getTokenPairs() {
-    const cacheKey = "token_pairs";
-    const cached = inMemoryCache.get<Pool[]>(cacheKey);
-    if (cached) return cached;
+    try {
+      const cacheKey = "token_pairs";
+      const cached = inMemoryCache.get<Pool[]>(cacheKey);
+      if (cached) return cached;
 
-    const query = `
-      query {
-        pools(
-          first: 100,
-          orderBy: totalValueLockedUSD,
-          orderDirection: desc,
-          where: {
-            volumeUSD_gt: "100000"
-          }
-        ) {
-          id
-          token0 {
+      const query = `
+        query {
+          pools(
+            first: 100,
+            orderBy: totalValueLockedUSD,
+            orderDirection: desc
+          ) {
             id
-            symbol
-            decimals
+            token0 {
+              id
+              symbol
+              decimals
+            }
+            token1 {
+              id
+              symbol
+              decimals
+            }
+            totalValueLockedUSD
+            volumeUSD
+            token0Price
+            token1Price
           }
-          token1 {
-            id
-            symbol
-            decimals
-          }
-          totalValueLockedUSD
-          volumeUSD
         }
+      `;
+
+      const { data, error } = await this.client.query(query, {}).toPromise();
+      if (error) {
+        console.error("Failed to fetch pools:", error);
+        throw new Error(`Failed to fetch pools: ${error.message}`);
       }
-    `;
 
-    const { data, error } = await this.client.query(query, {}).toPromise();
-    if (error) throw new Error(`Failed to fetch pools: ${error.message}`);
+      const pools = data?.pools || [];
+      inMemoryCache.set(cacheKey, pools, this.CACHE_TTL);
+      return pools;
+    } catch (error) {
+      console.error("Error in getTokenPairs:", error);
+      throw error;
+    }
+  }
 
-    const pools = data?.pools || [];
-    inMemoryCache.set(cacheKey, pools, this.CACHE_TTL);
-    return pools;
+  async findPoolByTokens(
+    token0Address: string,
+    token1Address: string
+  ): Promise<Pool | null> {
+    try {
+      const pools = await this.getTokenPairs();
+      return (
+        pools.find(
+          (pool) =>
+            (pool.token0.id.toLowerCase() === token0Address.toLowerCase() &&
+              pool.token1.id.toLowerCase() === token1Address.toLowerCase()) ||
+            (pool.token0.id.toLowerCase() === token1Address.toLowerCase() &&
+              pool.token1.id.toLowerCase() === token0Address.toLowerCase())
+        ) || null
+      );
+    } catch (error) {
+      console.error("Error in findPoolByTokens:", error);
+      throw error;
+    }
+  }
+
+  async getWMNTAddress(): Promise<string> {
+    return WMNT_ADDRESS;
   }
 
   async getTokens(): Promise<Token[]> {
@@ -204,8 +237,47 @@ class UniswapService {
     inMemoryCache.set(cacheKey, metrics, this.HISTORICAL_CACHE_TTL);
     return metrics;
   }
+  async getTopPools(limit: number = 6) {
+    const cacheKey = `top_pools:${limit}`;
+    const cached = inMemoryCache.get<Pool[]>(cacheKey);
+    if (cached) return cached;
+
+    const query = `
+      query {
+        pools(
+          first: ${limit}
+          orderBy: totalValueLockedUSD
+          orderDirection: desc
+          where: { totalValueLockedUSD_gt: "0" }
+        ) {
+          id
+          token0 {
+            id
+            symbol
+            decimals
+          }
+          token1 {
+            id
+            symbol
+            decimals
+          }
+          feeTier
+          totalValueLockedUSD
+          token0Price
+          token1Price
+        }
+      }
+    `;
+
+    const { data, error } = await this.client.query(query, {}).toPromise();
+
+    if (error) throw new Error(`Failed to fetch top pools: ${error.message}`);
+
+    const pools = data?.pools || [];
+    inMemoryCache.set(cacheKey, pools, this.CACHE_TTL);
+    return pools;
+  }
 }
 
 // Create a single instance of the service
-const uniswapServiceInstance = new UniswapService();
-export const uniswapService = uniswapServiceInstance;
+export const uniswapService = new UniswapService();

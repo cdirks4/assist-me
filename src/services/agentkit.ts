@@ -2,6 +2,8 @@ import { ethers } from "ethers";
 import { storageService } from "./storage";
 import { providerService } from "./provider";
 import { FundingService } from "./funding";
+import { WalletService } from "./wallet";
+import { swapService } from './swapService';
 
 interface WalletHealth {
   isConnected: boolean;
@@ -75,7 +77,7 @@ export class AgentKitService {
 
         if (createIfNotExist && this.wallet) {
           // Fund the newly created wallet
-          await FundingService.fundNewWallet(this.wallet.address);
+          await WalletService.fundNewWallet(this.wallet.address, "1", signer);
         }
 
         return true;
@@ -137,6 +139,39 @@ export class AgentKitService {
 
   getWalletAddress(): string | null {
     return this.wallet?.address || null;
+  }
+
+  async swapTokens(
+    tokenIn: string,
+    tokenOut: string,
+    amount: string,
+    slippageTolerance: number = 0.5
+  ): Promise<any> {
+    if (!this.wallet) {
+      throw new Error("Agent wallet not connected");
+    }
+
+    try {
+      const address = this.getWalletAddress();
+      if (!address) {
+        throw new Error("No wallet address available");
+      }
+
+      console.log(`Attempting to swap ${amount} ${tokenIn} for ${tokenOut}`);
+      
+      const result = await swapService.executeSwap({
+        tokenIn,
+        tokenOut,
+        amount,
+        recipient: address,
+        slippageTolerance
+      });
+
+      return result;
+    } catch (error) {
+      console.error("Failed to execute swap:", error);
+      throw error;
+    }
   }
 
   async transferFunds(

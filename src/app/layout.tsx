@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { PrivyProviderWrapper } from "@/providers/PrivyProvider";
 import SubgraphProvider from "@/providers/SubgraphProvider";
-
+import { NavBar } from "@/components/NavBar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -20,7 +20,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <PrivyProviderWrapper>
-          <SubgraphProvider>{children}</SubgraphProvider>
+          <SubgraphProvider>
+            <NavBar />
+
+            {children}
+          </SubgraphProvider>
         </PrivyProviderWrapper>
       </body>
     </html>

@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { GroqService } from "@/services/groq";
 import { UniswapService } from "@/services/uniswap";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { analyzeTrade, getMarketUpdate } from "@/app/api/groq/actions";
+import { analyzeTrade } from "../actions/groq";
 import { useSwap } from "@/hooks/useSwap";
 import { WalletBalance } from "@/components/WalletBalance";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+import { TopPools } from "@/components/TopPools";
+import { COMMON_BASES } from "@/constants/contracts";
+import { TestSwapButton } from "@/components/TestSwapButton";
+import { WrapMNTButton } from "@/components/WrapMNTButton";
 
 export default function MarketPage() {
   const { authenticated } = usePrivy();
@@ -28,7 +26,7 @@ export default function MarketPage() {
   const { executeSwap, loading: swapLoading } = useSwap();
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !wallets?.[0]?.address) return;
 
     setIsLoading(true);
     const userMessage = input.trim();
@@ -40,36 +38,35 @@ export default function MarketPage() {
       const response = await analyzeTrade(userMessage);
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: response.content,
-        },
+        { role: "assistant", content: response.content },
       ]);
 
-      if (response.trade) {
+      if (response.trade && response.trade.type !== "none") {
         setMessages((prev) => [
           ...prev,
-          {
-            role: "assistant",
-            content: "Processing trade...",
-          },
+          { role: "assistant", content: "Processing trade..." },
         ]);
 
         try {
+          // Handle MNT/WMNT conversion
+          const tokenIn = response.trade.tokenIn?.toLowerCase() === "mnt" 
+            ? COMMON_BASES.WMNT 
+            : response.trade.tokenIn;
+          const tokenOut = response.trade.tokenOut?.toLowerCase() === "mnt"
+            ? COMMON_BASES.WMNT
+            : response.trade.tokenOut;
+
           await executeSwap({
-            tokenIn: response.trade.tokenIn!,
-            tokenOut: response.trade.tokenOut!,
+            tokenIn: tokenIn!,
+            tokenOut: tokenOut!,
             amount: response.trade.amount!,
-            recipient: wallets[0]?.address || "",
+            recipient: wallets[0].address,
             slippageTolerance: 0.5,
           });
 
           setMessages((prev) => [
             ...prev,
-            {
-              role: "assistant",
-              content: "Trade executed successfully!",
-            },
+            { role: "assistant", content: "Trade executed successfully!" },
           ]);
         } catch (swapError) {
           setMessages((prev) => [
@@ -99,11 +96,19 @@ export default function MarketPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4">
+      <TopPools />
+
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">DeFi Market Assistant</h1>
-        
+
         {wallets?.[0]?.address && (
-          <WalletBalance address={wallets[0].address} />
+          <div className="space-y-4 mb-8">
+            <WalletBalance address={wallets[0].address} />
+            <div className="flex gap-4">
+              <WrapMNTButton agentAddress={wallets[0].address} />
+              <TestSwapButton agentAddress={wallets[0].address} />
+            </div>
+          </div>
         )}
 
         <div className="bg-white/5 rounded-xl border border-white/10 p-4 mb-8">

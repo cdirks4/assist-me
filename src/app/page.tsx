@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import CreateWallet from "@/components/CreateWallet";
 import { WalletFunding } from "@/components/WalletFunding";
 import { TransferBackButton } from "@/components/TransferBackButton";
-import { NavBar } from "@/components/NavBar";
 import { agentKit } from "@/services/agentkit";
 import { TradingChat } from "@/components/TradingChat";
 
@@ -30,7 +29,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <NavBar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">

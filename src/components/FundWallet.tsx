@@ -2,6 +2,7 @@
 
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useState } from "react";
+import { ethers } from "ethers";
 import { FundingService } from "@/services/funding";
 
 interface FundWalletProps {
@@ -15,6 +16,7 @@ export default function FundWallet({
 }: FundWalletProps) {
   const { login, authenticated } = usePrivy();
   const { wallets } = useWallets();
+  const [amount, setAmount] = useState("0.1"); // Default amount
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,13 +34,14 @@ export default function FundWallet({
         agentAddress,
         wallets[0]
       );
+      
       if (success) {
         onSuccess?.();
       } else {
         setError("Failed to fund wallet");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fund wallet");
+      setError(err instanceof Error ? err.message : "Failed to send funds");
     } finally {
       setIsLoading(false);
     }
