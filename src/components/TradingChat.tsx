@@ -4,11 +4,12 @@ import { useState } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { TradeExecutor } from "@/services/tradeExecutor";
 import { useAgentWallet } from "@/context/AgentWalletContext";
+import { HumanQueryService } from "@/services/humanQueryService";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
-  type?: "default" | "trade" | "error";
+  type?: "default" | "trade" | "error" | "info";
 }
 
 export function TradingChat() {
@@ -18,7 +19,7 @@ export function TradingChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Welcome to the DeFi trading assistant! How can I help you today?",
+      content: "Welcome to the DeFi trading assistant! I can help you with:\n• Trading tokens\n• Viewing top pools\n• Checking recent trades\n• Token listings\n\nTry asking 'what are the top pools' or 'show recent trades'!",
       type: "default",
     },
   ]);
@@ -26,7 +27,7 @@ export function TradingChat() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !isConnected) return;
+    if (!input.trim() || isLoading) return;
 
     setIsLoading(true);
     const userMessage = input.trim();
@@ -39,25 +40,32 @@ export function TradingChat() {
     ]);
 
     try {
-      // Add processing message
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Processing trade...", type: "trade" },
-      ]);
+      // First try to handle as a human query
+      if (userMessage.toLowerCase().includes("pool") || 
+          userMessage.toLowerCase().includes("trade") || 
+          userMessage.toLowerCase().includes("token")) {
+        const response = await HumanQueryService.executeHumanQuery(userMessage);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: response, type: "info" },
+        ]);
+      } else {
+        // If not a query, try to execute as a trade
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "Processing trade...", type: "trade" },
+        ]);
 
-      // Execute the trade
-      const result = await TradeExecutor.executeTradeCommand(userMessage);
-
-      // Add result message
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: result.message,
-          type: result.success ? "trade" : "error",
-        },
-      ]);
-
+        const result = await TradeExecutor.executeTradeCommand(userMessage);
+        setMessages((prev) => [
+          ...prev.filter((msg) => msg.content !== "Processing trade..."),
+          {
+            role: "assistant",
+            content: result.message,
+            type: result.success ? "trade" : "error",
+          },
+        ]);
+      }
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -74,7 +82,7 @@ export function TradingChat() {
 
   return (
     <div className="max-w-2xl mx-auto mt-8 p-4 bg-white/5 rounded-xl border border-white/10">
-      <div className="space-y-4 h-96 overflow-y-auto mb-4">
+      <div className="space-y-4 h-96 overflow-y-auto mb-4 whitespace-pre-wrap">
         {messages.map((message, i) => (
           <div
             key={i}
@@ -90,6 +98,8 @@ export function TradingChat() {
                   ? "bg-green-700"
                   : message.type === "error"
                   ? "bg-red-700"
+                  : message.type === "info"
+                  ? "bg-blue-700"
                   : "bg-gray-700"
               }`}
             >
@@ -105,7 +115,7 @@ export function TradingChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Type 'wrap X MNT', 'unwrap X WMNT', or ask about 'top pools', 'recent trades'..."
+          placeholder="Try: 'what are the top pools', 'show recent trades', or 'wrap 0.1 MNT'..."
           className="flex-1 px-4 py-2 bg-black/20 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           disabled={!isConnected}
         />

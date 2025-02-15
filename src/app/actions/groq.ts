@@ -116,6 +116,7 @@ async function parseTradeIntent(
       For unwrap: {"type":"unwrap","amount":"X"} where X is the amount to unwrap
       For buy: {"type":"buy","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X"}
       For sell: {"type":"sell","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X"}
+      For wallet balance: {"type":"wallet_balance"}
       For no trade: {"type":"none"}
       
       Examples:

@@ -2,6 +2,7 @@ import { WalletService } from "./wallet";
 import { agentKit } from "./agentkit";
 import { analyzeTrade } from "@/app/actions/groq";
 import { HumanQueryService } from "./humanQueryService";
+import { getAgentWalletSummary } from "./agentWalletSummary";
 
 interface TradeResult {
   success: boolean;
@@ -12,7 +13,17 @@ interface TradeResult {
 export class TradeExecutor {
   static async executeTradeCommand(userMessage: string): Promise<TradeResult> {
     try {
-      // First analyze the trade intent using AI
+      // Check for wallet balance queries first
+      if (userMessage.toLowerCase().includes("wallet") && 
+          (userMessage.toLowerCase().includes("balance") || userMessage.toLowerCase().includes("value"))) {
+        const walletSummary = await getAgentWalletSummary();
+        return {
+          success: true,
+          message: walletSummary,
+        };
+      }
+
+      // Then analyze the trade intent using AI
       const analysis = await analyzeTrade(userMessage);
       const tradeIntent = analysis.trade;
 
