@@ -2,6 +2,10 @@
 
 An AI-powered DeFi trading companion built on the Mantle Network that helps users interact with decentralized exchanges through natural language commands and provides real-time market insights.
 
+> 🏆 Submitted to Sozu AI Virtual Hack Week 3
+
+**Live Demo**: [https://assist-me-six.vercel.app/](https://assist-me-six.vercel.app/)
+
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
