@@ -1,36 +1,142 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DeFi Assistant Platform
 
-## Getting Started
+An AI-powered DeFi trading companion built on the Mantle Network that helps users interact with decentralized exchanges through natural language commands and provides real-time market insights.
 
-First, run the development server:
+## Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Environment Setup](#environment-setup)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [License](#license)
 
+## Overview
+
+The DeFi Assistant Platform is a web3 application that combines artificial intelligence with decentralized finance to provide an intuitive trading experience. Running on the Mantle Sepolia testnet, it offers features like AI-powered trading, wallet management, and real-time market analysis.
+
+## Features
+
+- **AI-Powered Trading**
+  - Natural language processing for trade execution
+  - Intelligent market analysis
+  - Automated trading suggestions
+
+- **Wallet Management**
+  - Secure wallet creation and connection
+  - Balance tracking across multiple tokens
+  - Easy funds transfer and management
+  - MNT/WMNT wrapping and unwrapping
+
+- **Market Analysis**
+  - Real-time pool statistics
+  - Top liquidity pools tracking
+  - Recent trade monitoring
+  - Price and volume analytics
+
+- **DeFi Operations**
+  - Token swaps through FusionX/Uniswap
+  - Liquidity pool interaction
+  - Smart contract integration
+  - Multi-chain support (Mantle Sepolia, Arbitrum Sepolia)
+
+## Technology Stack
+
+- **Frontend Framework**: Next.js 14+ with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Authentication**: Privy
+- **Blockchain Integration**: ethers.js
+- **State Management**: React Context
+- **API Integration**: URQL for GraphQL
+- **AI Integration**: Groq
+
+## Prerequisites
+
+- Node.js 18.0 or higher
+- npm or yarn
+- A web3 wallet (MetaMask recommended)
+- Access to Mantle Sepolia testnet
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd defi-assistant
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Start the development server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file in the root directory with the following variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
+NEXT_PUBLIC_CHAIN_ID=5003
+NEXT_PUBLIC_CHAIN=mantle-sepolia
+NEXT_PUBLIC_RPC_URL=https://rpc.sepolia.mantle.xyz
+NEXT_PUBLIC_BLOCK_EXPLORER=https://explorer.sepolia.mantle.xyz
+NEXT_PUBLIC_TOKEN_CONTRACT=your-token-contract
+```
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+1. **Connect Wallet**
+   - Click "Login" in the navigation bar
+   - Choose email or wallet connection method
+   - Authorize connection to Mantle Sepolia network
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Create AI Agent Wallet**
+   - Navigate to the home page
+   - Click "Create Wallet" in the Get Started section
+   - Fund your wallet with test MNT
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Trading**
+   - Use the chat interface to execute trades
+   - Type natural language commands like:
+     - "wrap 0.1 MNT"
+     - "show top pools"
+     - "check recent trades"
 
-## Deploy on Vercel
+4. **Market Analysis**
+   - Visit the Markets page for real-time analytics
+   - View top liquidity pools
+   - Monitor recent trading activity
+   - Track token prices and volumes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Architecture
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The application follows a modular architecture:
+
+- `src/app/*` - Next.js pages and API routes
+- `src/components/*` - Reusable React components
+- `src/services/*` - Core business logic and blockchain interactions
+- `src/hooks/*` - Custom React hooks for data fetching
+- `src/context/*` - Global state management
+- `src/lib/*` - Utility functions and helpers
+- `src/constants/*` - Configuration and contract constants
+
+## Contributing
+
+Contributions are welcome! Please read our contributing guidelines and submit pull requests to our repository.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
