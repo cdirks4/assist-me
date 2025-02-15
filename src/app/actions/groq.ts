@@ -4,7 +4,7 @@ import Groq from "groq-sdk";
 import { uniswapService } from "@/services/uniswap";
 
 interface TradeIntent {
-  type: "buy" | "sell" | "wrap" | "none";
+  type: "buy" | "sell" | "wrap" | "unwrap" | "none";
   tokenIn?: string;
   tokenOut?: string;
   amount?: string;
@@ -107,15 +107,21 @@ export async function getTopPools() {
 
 async function parseTradeIntent(
   message: string
-): Promise<TradeIntent | undefined> {
+): Promise<TradeIntent> {
   const messages = [
     {
       role: "system",
       content: `Extract trade intent from this message. Return JSON only in this format:
-      For buy: {"type":"buy","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"100"}
-      For sell: {"type":"sell","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"100"}
-      For wrap: {"type":"wrap","amount":"100"}
-      For no trade: {"type":"none"}`,
+      For wrap: {"type":"wrap","amount":"X"} where X is the amount to wrap
+      For unwrap: {"type":"unwrap","amount":"X"} where X is the amount to unwrap
+      For buy: {"type":"buy","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X"}
+      For sell: {"type":"sell","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X"}
+      For no trade: {"type":"none"}
+      
+      Examples:
+      "wrap 0.1 MNT" -> {"type":"wrap","amount":"0.1"}
+      "unwrap 1.5 WMNT" -> {"type":"unwrap","amount":"1.5"}
+      "I want to wrap 2 MNT" -> {"type":"wrap","amount":"2"}`,
     },
     {
       role: "user",
