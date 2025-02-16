@@ -82,11 +82,17 @@ export default {
             transform: "translateY(0)",
           },
         },
+        pulse: {
+          "0%, 100%": { opacity: "0.6" },
+          "50%": { opacity: "0.2" },
+        },
       },
       animation: {
         wave: "wave 15s linear infinite",
+        "wave-slow": "wave 20s linear infinite",
         "fade-up": "fade-up 0.5s ease-out",
         "fade-down": "fade-down 0.5s ease-out",
+        pulse: "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },
