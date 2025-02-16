@@ -17,11 +17,14 @@ export default function MarketPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    // Remove background classes from the container
+    <div className="container mx-auto px-4 py-8">
       <TopPools />
 
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">DeFi Market Assistant</h1>
+        <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent">
+          DeFi Assistant Platform
+        </h1>
 
         {wallets?.[0]?.address && (
           <div className="space-y-4 mb-8">
