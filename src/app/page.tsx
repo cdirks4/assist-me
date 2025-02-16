@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import { useState } from "react";
 import CreateWallet from "@/components/CreateWallet";
 import { WalletFunding } from "@/components/WalletFunding";
@@ -8,7 +8,6 @@ import { TradingChat } from "@/components/TradingChat";
 import { Trading } from "@/components/Trading";
 import { SimpleSwapButton } from "@/components/SimpleSwapButton";
 import { useAgentWallet } from "@/context/AgentWalletContext";
-
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const { address: agentAddress } = useAgentWallet();
@@ -19,11 +18,21 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl sm:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-            DeFi Assistant Platform
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/better-hd.png"
+              alt="DeFi Assistant Logo"
+              width={120}
+              height={120}
+              className="mb-4"
+            />
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-bold mb-6 bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent">
+            Your AI Trading Companion
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Your AI-powered DeFi trading companion on Mantle Network
+            Experience intelligent DeFi trading with AI-powered insights on
+            Mantle Network
           </p>
         </div>
 

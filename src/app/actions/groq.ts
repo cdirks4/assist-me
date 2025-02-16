@@ -18,23 +18,23 @@ const groq = new Groq({
 async function makeRequest(messages: any[], includeMarketData = false) {
   try {
     if (includeMarketData) {
-      const [tokens, recentSwaps] = await Promise.all([
+      const [tokens, recentSwaps, pools] = await Promise.all([
         uniswapService.getTokens(),
         uniswapService.getRecentSwaps(5),
+        uniswapService.getTopPools(5)
       ]);
+
+      const totalTVL = pools.reduce((sum, pool) => 
+        sum + Number(pool.totalValueLockedUSD), 0
+      );
 
       messages.unshift({
         role: "system",
-        content: `Current market data:
-        Active tokens: ${tokens
-          .map((t) => `${t.symbol} (TVL: $${t.totalValueLockedUSD})`)
-          .join(", ")}
-        Recent swaps: ${recentSwaps
-          .map(
-            (s) =>
-              `${s.pool.token0.symbol}/${s.pool.token1.symbol} - $${s.amountUSD}`
-          )
-          .join(", ")}`,
+        content: `Current market context:
+        Total TVL: $${totalTVL.toLocaleString()}
+        Available tokens: ${tokens.map((t) => `${t.symbol} (TVL: $${t.totalValueLockedUSD})`).join(", ")}
+        Top pools: ${pools.map(p => `${p.token0.symbol}/${p.token1.symbol} ($${Number(p.totalValueLockedUSD).toLocaleString()})`).join(", ")}
+        Recent swaps: ${recentSwaps.map((s) => `${s.pool.token0.symbol}/${s.pool.token1.symbol} - $${s.amountUSD}`).join(", ")}`,
       });
     }
 
@@ -54,10 +54,20 @@ async function makeRequest(messages: any[], includeMarketData = false) {
 }
 
 export async function analyzeTrade(userMessage: string) {
+  // Send only the essential system message and user command
   const messages = [
     {
       role: "system",
-      content: `You are a DeFi trading assistant on Mantle Network. Help users understand market conditions and execute trades.`,
+      content: `You are a DeFi trading assistant on Mantle Network. Process trading commands like:
+- Wrap/unwrap MNT/WMNT (e.g., "wrap 0.1 MNT", "unwrap 1 WMNT")
+- Token swaps (e.g., "swap 0.5 MNT for USDC", "buy 100 USDC with MNT")
+
+Extract trading intents in JSON format:
+- Wrap: {"type":"wrap","amount":"X"}
+- Unwrap: {"type":"unwrap","amount":"X"}
+- Buy: {"type":"buy","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X","slippage":"0.5"}
+- Sell: {"type":"sell","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X","slippage":"0.5"}
+- Non-trade: {"type":"none"}`,
     },
     {
       role: "user",
@@ -76,13 +86,18 @@ export async function getMarketUpdate() {
   const messages = [
     {
       role: "system",
-      content:
-        "Analyze and summarize the current Mantle Network DeFi market conditions.",
+      content: `Analyze the current Mantle Network DeFi market conditions. Focus on:
+      1. Overall market health and TVL trends
+      2. Most active trading pairs and their performance
+      3. Notable price movements or trading opportunities
+      4. Liquidity distribution across pools
+      5. Recent significant trades and their impact
+      
+      Provide a concise but comprehensive analysis that would be useful for traders.`,
     },
     {
       role: "user",
-      content:
-        "Provide a market update focusing on active pairs, liquidity, and recent trading activity.",
+      content: "Provide a detailed market update focusing on active pairs, liquidity, and recent trading activity.",
     },
   ];
 
@@ -114,15 +129,9 @@ async function parseTradeIntent(
       content: `Extract trade intent from this message. Return JSON only in this format:
       For wrap: {"type":"wrap","amount":"X"} where X is the amount to wrap
       For unwrap: {"type":"unwrap","amount":"X"} where X is the amount to unwrap
-      For buy: {"type":"buy","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X"}
-      For sell: {"type":"sell","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X"}
-      For wallet balance: {"type":"wallet_balance"}
-      For no trade: {"type":"none"}
-      
-      Examples:
-      "wrap 0.1 MNT" -> {"type":"wrap","amount":"0.1"}
-      "unwrap 1.5 WMNT" -> {"type":"unwrap","amount":"1.5"}
-      "I want to wrap 2 MNT" -> {"type":"wrap","amount":"2"}`,
+      For buy: {"type":"buy","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X","slippage":"0.5"}
+      For sell: {"type":"sell","tokenIn":"TOKEN1","tokenOut":"TOKEN2","amount":"X","slippage":"0.5"}
+      For no trade: {"type":"none"}`,
     },
     {
       role: "user",

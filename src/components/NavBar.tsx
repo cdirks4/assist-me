@@ -4,6 +4,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import Image from "next/image";
 
 export function NavBar() {
   const { login, authenticated, user, logout } = usePrivy();
@@ -16,7 +17,16 @@ export function NavBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="flex-shrink-0">
+            <Link
+              href="/"
+              className="flex-shrink-0 flex items-center space-x-2"
+            >
+              <Image
+                src="/better-hd.png"
+                alt="DeFi Assistant Logo"
+                width={50}
+                height={50}
+              />
               <span className="text-xl font-bold bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent">
                 DeFi Assistant
               </span>

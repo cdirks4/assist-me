@@ -19,8 +19,6 @@ export default function MarketPage() {
   return (
     // Remove background classes from the container
     <div className="container mx-auto px-4 py-8">
-      <TopPools />
-
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent">
           DeFi Assistant Platform
@@ -36,6 +34,8 @@ export default function MarketPage() {
         )}
 
         <TradingChat />
+        <div className="h-20"></div>
+        <TopPools />
       </div>
     </div>
   );

@@ -1,132 +1,121 @@
 "use client";
 
 import { useState } from "react";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { TradeExecutor } from "@/services/tradeExecutor";
+import { usePrivy } from "@privy-io/react-auth";
 import { useAgentWallet } from "@/context/AgentWalletContext";
-import { HumanQueryService } from "@/services/humanQueryService";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  type?: "default" | "trade" | "error" | "info";
-}
+import { ChatEngine, ChatMessage } from "@/services/chatEngine";
+import { Button } from "./ui/Button";
+import { Card, CardContent } from "./ui/Card";
+import { WelcomeBanner } from "./WelcomeBanner";
 
 export function TradingChat() {
   const { authenticated } = usePrivy();
-  const { wallets } = useWallets();
   const { isConnected } = useAgentWallet();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Welcome to the DeFi trading assistant! I can help you with:\n• Trading tokens\n• Viewing top pools\n• Checking recent trades\n• Token listings\n\nTry asking 'what are the top pools' or 'show recent trades'!",
-      type: "default",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !isConnected) return;
 
     setIsLoading(true);
     const userMessage = input.trim();
     setInput("");
 
     // Add user message to chat
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: userMessage, type: "default" },
-    ]);
+    const newUserMessage: ChatMessage = {
+      role: "user",
+      content: userMessage,
+      type: "default",
+      timestamp: Date.now(),
+    };
+
+    setMessages(prev => [...prev, newUserMessage]);
 
     try {
-      // First try to handle as a human query
-      if (userMessage.toLowerCase().includes("pool") || 
-          userMessage.toLowerCase().includes("trade") || 
-          userMessage.toLowerCase().includes("token")) {
-        const response = await HumanQueryService.executeHumanQuery(userMessage);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: response, type: "info" },
-        ]);
-      } else {
-        // If not a query, try to execute as a trade
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "Processing trade...", type: "trade" },
-        ]);
+      // Process message through ChatEngine
+      const response = await ChatEngine.processMessage(messages, userMessage);
 
-        const result = await TradeExecutor.executeTradeCommand(userMessage);
-        setMessages((prev) => [
-          ...prev.filter((msg) => msg.content !== "Processing trade..."),
-          {
-            role: "assistant",
-            content: result.message,
-            type: result.success ? "trade" : "error",
-          },
-        ]);
-      }
+      // Add assistant's response
+      const assistantMessage: ChatMessage = {
+        role: "assistant",
+        content: response.message,
+        type: response.type,
+        timestamp: Date.now(),
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
     } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          type: "error",
-        },
-      ]);
+      // Handle errors
+      const errorMessage: ChatMessage = {
+        role: "assistant",
+        content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        type: "error",
+        timestamp: Date.now(),
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-8 p-4 bg-white/5 rounded-xl border border-white/10">
-      <div className="space-y-4 h-96 overflow-y-auto mb-4 whitespace-pre-wrap">
-        {messages.map((message, i) => (
-          <div
-            key={i}
-            className={`flex ${
-              message.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+    <Card className="max-w-2xl mx-auto mt-8">
+      <CardContent className="p-4">
+        <WelcomeBanner />
+        
+        <div className="space-y-4 h-96 overflow-y-auto mb-4 whitespace-pre-wrap">
+          {messages.map((message, i) => (
             <div
-              className={`max-w-[80%] p-3 rounded-lg ${
-                message.role === "user"
-                  ? "bg-purple-600"
-                  : message.type === "trade"
-                  ? "bg-green-700"
-                  : message.type === "error"
-                  ? "bg-red-700"
-                  : message.type === "info"
-                  ? "bg-blue-700"
-                  : "bg-gray-700"
+              key={`${message.timestamp}-${i}`}
+              className={`flex ${
+                message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              {message.content}
+              <div
+                className={`max-w-[80%] p-3 rounded-lg ${
+                  message.role === "user"
+                    ? "bg-purple-600"
+                    : message.type === "trade"
+                    ? "bg-green-700"
+                    : message.type === "error"
+                    ? "bg-red-700"
+                    : message.type === "market"
+                    ? "bg-blue-700"
+                    : message.type === "wallet"
+                    ? "bg-indigo-700"
+                    : message.type === "info"
+                    ? "bg-blue-700"
+                    : "bg-gray-700"
+                }`}
+              >
+                {message.content}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Try: 'what are the top pools', 'show recent trades', or 'wrap 0.1 MNT'..."
-          className="flex-1 px-4 py-2 bg-black/20 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-          disabled={!isConnected}
-        />
-        <button
-          onClick={handleSend}
-          disabled={isLoading || !input.trim() || !isConnected}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg disabled:opacity-50"
-        >
-          {isLoading ? "..." : "Send"}
-        </button>
-      </div>
-    </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask about markets, trade tokens, or check your wallet..."
+            className="flex-1 px-4 py-2 bg-black/20 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            disabled={!isConnected}
+          />
+          <Button
+            onClick={handleSend}
+            disabled={isLoading || !input.trim() || !isConnected}
+            className="px-4 py-2"
+          >
+            {isLoading ? "..." : "Send"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
